@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; base-uri 'none'; form-action 'none'">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Move Beat</title>
+<style>
+:root{--bg:#081826;--panel:#0f2a3d;--lane:#16405c;--teal:#4de2c5;--yellow:#ffd84d;--blue:#7ab8ff;--text:#eaf6ff;--mute:#9cc0d6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:radial-gradient(900px 500px at 50% -10%,#14405a 0%,var(--bg) 60%) fixed,var(--bg);color:var(--text);font-family:system-ui,"Hiragino Sans","Noto Sans JP",sans-serif;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(77,226,197,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(77,226,197,.05) 1px,transparent 1px);background-size:36px 36px;pointer-events:none}
+.app{position:relative;max-width:520px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding:0 14px 14px}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 2px}
+.logo{font-weight:900;font-size:22px;letter-spacing:.5px;color:var(--teal);text-shadow:0 0 12px rgba(77,226,197,.7)}
+.logo span{color:var(--yellow);text-shadow:0 0 12px rgba(255,216,77,.7)}
+.langsw{display:flex;border:1.5px solid var(--teal);border-radius:20px;overflow:hidden}
+.langsw button{background:transparent;color:var(--teal);border:0;padding:6px 12px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.langsw button[aria-pressed=true]{background:var(--teal);color:var(--panel)}
+button:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.screen{display:none;flex:1;flex-direction:column}
+.screen.on{display:flex}
+/* start */
+.hero{text-align:center;padding:14px 0 6px}
+.hero h1{margin:6px 0 6px;font-size:44px;line-height:1.1;color:#fff;text-shadow:0 0 8px var(--teal),0 0 24px var(--teal)}
+.hero p{margin:0 auto;color:var(--mute);max-width:360px;line-height:1.6;font-size:15px}
+.icons{display:flex;justify-content:center;gap:12px;margin:22px 0}
+.icons span{font-size:44px;background:var(--lane);border:2px solid var(--teal);border-radius:18px;padding:10px 14px;box-shadow:0 0 16px rgba(77,226,197,.35);animation:bob 1.2s ease-in-out infinite}
+.icons span:nth-child(2){animation-delay:.2s;border-color:var(--yellow);box-shadow:0 0 16px rgba(255,216,77,.35)}
+.icons span:nth-child(3){animation-delay:.4s;border-color:var(--blue);box-shadow:0 0 16px rgba(122,184,255,.35)}
+@keyframes bob{50%{transform:translateY(-10px)}}
+.card{background:rgba(15,42,61,.85);border:1px solid rgba(77,226,197,.3);border-radius:16px;padding:14px 16px;margin:6px 0}
+.card ol{margin:0;padding-left:20px;line-height:1.8;font-size:15px}
+.best{text-align:center;color:var(--yellow);font-weight:700;margin:12px 0 4px;min-height:24px}
+.big{display:block;width:100%;border:0;border-radius:18px;padding:16px;font-size:22px;font-weight:900;cursor:pointer;font-family:inherit;background:var(--yellow);color:#2a2100;box-shadow:0 5px 0 #b9961a,0 0 24px rgba(255,216,77,.5);margin-top:10px}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 #b9961a}
+.big.alt{background:transparent;color:var(--teal);border:2px solid var(--teal);box-shadow:none;font-size:17px;padding:12px}
+.tip{text-align:center;color:var(--mute);font-size:12.5px;margin-top:10px}
+/* game */
+.hud{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 4px 10px;font-weight:800}
+.hud .time{font-size:20px;color:var(--teal)}
+.hud .score{font-size:20px;color:#fff;text-align:center}
+.hud .score small{display:block;font-size:11px;color:var(--mute);font-weight:600;letter-spacing:1px}
+.hud .combo{font-size:20px;color:var(--yellow);min-width:84px;text-align:right}
+.bar{height:6px;border-radius:4px;background:var(--lane);overflow:hidden;margin-bottom:10px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--yellow));box-shadow:0 0 10px var(--teal)}
+.lanes{position:relative;flex:1;min-height:300px;display:flex;gap:8px}
+.lane{flex:1;position:relative;background:linear-gradient(180deg,#123852,var(--lane));border:2px solid var(--teal);border-radius:14px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,.35)}
+.lane:nth-child(2){border-color:var(--yellow)}
+.lane:nth-child(3){border-color:var(--blue)}
+.lane.flash::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.22)}
+.hitline{position:absolute;left:0;right:0;top:80%;height:4px;margin-top:-2px;background:var(--yellow);box-shadow:0 0 14px var(--yellow),0 0 30px var(--yellow);border-radius:3px;z-index:3;pointer-events:none}
+.note{position:absolute;left:50%;top:0;width:56px;height:56px;margin-left:-28px;border-radius:16px;background:rgba(8,24,38,.75);border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:32px;will-change:transform;z-index:2;box-shadow:0 0 12px currentColor}
+.lane:nth-child(1) .note{color:var(--teal)}
+.lane:nth-child(2) .note{color:var(--yellow)}
+.lane:nth-child(3) .note{color:var(--blue)}
+.note.missed{opacity:.25;filter:grayscale(1)}
+.note.pop{animation:pop .3s forwards}
+@keyframes pop{to{transform:var(--tf) scale(1.8);opacity:0}}
+.judge{position:absolute;left:0;right:0;top:44%;text-align:center;font-size:34px;font-weight:900;z-index:5;pointer-events:none;opacity:0;text-shadow:0 0 14px currentColor}
+.judge.show{animation:jd .6s ease-out}
+@keyframes jd{0%{opacity:1;transform:scale(.7)}25%{transform:scale(1.15)}100%{opacity:0;transform:translateY(-24px) scale(1)}}
+.count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:84px;font-weight:900;color:#fff;text-shadow:0 0 20px var(--teal),0 0 40px var(--teal);z-index:6;pointer-events:none;text-align:center}
+.pads{display:flex;gap:8px;margin-top:10px}
+.pad{flex:1;height:104px;border:0;border-radius:18px;font-family:inherit;font-weight:900;font-size:15px;cursor:pointer;color:#06202e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.pad span{font-size:38px;line-height:1}
+.pad.p0{background:var(--teal);box-shadow:0 5px 0 #2a9e89,0 0 18px rgba(77,226,197,.5)}
+.pad.p1{background:var(--yellow);box-shadow:0 5px 0 #b9961a,0 0 18px rgba(255,216,77,.5)}
+.pad.p2{background:var(--blue);box-shadow:0 5px 0 #4a7fbf,0 0 18px rgba(122,184,255,.5)}
+.pad.down{transform:translateY(4px);filter:brightness(1.15)}
+.quit{background:none;border:0;color:var(--mute);text-decoration:underline;cursor:pointer;margin:10px auto 0;font-family:inherit;font-size:13px}
+/* result */
+.res{text-align:center;padding-top:6px}
+.res h2{margin:0;color:var(--teal);font-size:18px}
+.res .em{font-size:84px;margin:8px 0 0;animation:bob 1.4s ease-in-out infinite;display:block}
+.res .msg{font-size:26px;font-weight:900;color:var(--yellow);line-height:1.35;margin:4px 0;text-shadow:0 0 14px rgba(255,216,77,.5)}
+.res .sub{color:var(--mute);font-size:14px;margin:0 0 6px}
+.kcal{display:inline-block;margin:6px 0;padding:6px 14px;border-radius:20px;border:1.5px dashed var(--teal);color:var(--teal);font-weight:800}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.grid div{background:var(--panel);border:1px solid rgba(77,226,197,.25);border-radius:12px;padding:8px 4px}
+.grid b{display:block;font-size:20px;color:#fff}
+.grid small{color:var(--mute);font-size:11.5px}
+.rank{display:inline-block;font-size:34px;font-weight:900;color:var(--panel);background:var(--yellow);border-radius:14px;padding:0 16px;margin-left:8px;vertical-align:middle;box-shadow:0 0 16px rgba(255,216,77,.6)}
+.newbest{color:var(--yellow);font-weight:800;min-height:22px}
+.note-fun{color:var(--mute);font-size:12.5px;margin-top:8px}
+@media (min-width:700px){.app{padding-bottom:30px}.hero h1{font-size:54px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="logo" data-demo="logo">Move<span>Beat</span></div>
+  <div class="langsw" data-demo="lang-switch" role="group" aria-label="Language">
+    <button type="button" data-lang="ja" aria-pressed="false" data-demo="lang-ja">日本語</button>
+    <button type="button" data-lang="en" aria-pressed="true" data-demo="lang-en">EN</button>
+  </div>
+</header>
+
+<main style="flex:1;display:flex;flex-direction:column">
+<section id="s-start" class="screen on">
+  <div class="hero">
+    <div class="icons" aria-hidden="true"><span>🦘</span><span>🙆</span><span>🧎</span></div>
+    <h1>Move Beat</h1>
+    <p data-i="tagline"></p>
+  </div>
+  <div class="card" data-demo="how-to">
+    <ol><li data-i="how1"></li><li data-i="how2"></li><li data-i="how3"></li></ol>
+  </div>
+  <div class="best" id="bestLine" data-demo="best-score"></div>
+  <button class="big" id="btnStart" type="button" data-demo="start-button" data-i="start"></button>
+  <div class="tip" data-i="tip"></div>
+</section>
+
+<section id="s-game" class="screen">
+  <div class="hud">
+    <div class="time">⏱ <span id="hTime">1:00</span></div>
+    <div class="score"><small data-i="score"></small><span id="hScore" data-demo="score">0</span></div>
+    <div class="combo">🔥 ×<span id="hCombo" data-demo="combo">0</span></div>
+  </div>
+  <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+  <div class="lanes" id="lanes" data-demo="lanes">
+    <div class="lane" id="lane0"></div>
+    <div class="lane" id="lane1"></div>
+    <div class="lane" id="lane2"></div>
+    <div class="hitline"></div>
+    <div class="judge" id="judge" aria-live="polite" data-demo="judgement"></div>
+    <div class="count" id="count"></div>
+  </div>
+  <div class="pads">
+    <button type="button" class="pad p0" id="pad0" data-demo="pad-jump" data-lane="0"><span>🦘</span><b data-i="mJump"></b></button>
+    <button type="button" class="pad p1" id="pad1" data-demo="pad-banzai" data-lane="1"><span>🙆</span><b data-i="mBanzai"></b></button>
+    <button type="button" class="pad p2" id="pad2" data-demo="pad-squat" data-lane="2"><span>🧎</span><b data-i="mSquat"></b></button>
+  </div>
+  <button type="button" class="quit" id="btnQuit" data-demo="quit-button" data-i="quit"></button>
+</section>
+
+<section id="s-result" class="screen">
+  <div class="res">
+    <h2 data-i="resTitle"></h2>
+    <span class="em" id="rEmoji" aria-hidden="true">🍗</span>
+    <div class="msg" id="rMsg" data-demo="result-message"></div>
+    <div class="sub" id="rSub"></div>
+    <div class="kcal" id="rKcal" data-demo="result-kcal"></div>
+    <div style="margin-top:6px"><span data-i="rank" style="color:var(--mute);font-weight:700"></span><span class="rank" id="rRank" data-demo="result-rank">A</span></div>
+    <div class="grid" data-demo="result-stats">
+      <div><b id="rScore">0</b><small data-i="score"></small></div>
+      <div><b id="rCombo">0</b><small data-i="maxCombo"></small></div>
+      <div><b id="rAcc">0%</b><small data-i="accuracy"></small></div>
+      <div><b id="rPerfect">0</b><small data-i="perfect"></small></div>
+      <div><b id="rGreat">0</b><small data-i="great"></small></div>
+      <div><b id="rMiss">0</b><small data-i="miss"></small></div>
+    </div>
+    <div class="newbest" id="rNew"></div>
+    <button class="big" id="btnAgain" type="button" data-demo="again-button" data-i="again"></button>
+    <button class="big alt" id="btnHome" type="button" data-demo="home-button" data-i="home"></button>
+    <div class="note-fun" data-i="funNote"></div>
+  </div>
+</section>
+</main>
+</div>
+
+<script>
+const I18N = {
+  ja: {
+    title:"Move Beat｜1分間の運動リズムゲーム",
+    tagline:"落ちてくる動きのアイコンに合わせて、1分間からだを動かそう！終わると笑える消費換算が出ます。",
+    how1:"アイコンが上から落ちてきます",
+    how2:"黄色いラインに来たら、実際にその動きをする！",
+    how3:"同じアイコンの大きなボタンをタップ！",
+    start:"▶ スタート", tip:"キーボードなら A/S/D（または J/K/L）でも遊べます",
+    score:"スコア", mJump:"ジャンプ", mBanzai:"バンザイ", mSquat:"しゃがむ", quit:"やめてもどる",
+    ready:"ようい…", go:"GO!",
+    perfect:"PERFECT!", great:"GREAT!", good:"GOOD", miss:"MISS", missTap:"はやい！",
+    resTitle:"1分おつかれさま！", rank:"ランク", maxCombo:"最大コンボ", accuracy:"成功率",
+    again:"もう一回！", home:"タイトルへ", funNote:"※ ネタ表示です。実際の消費カロリーとは関係ありません。",
+    kcal:(k,s)=>`約 ${k} kcal ・ ${s.toLocaleString()} 歩ぶん（ネタ）`,
+    best:b=>b>0?`🏆 ベストスコア ${b.toLocaleString()}`:"🏆 まだ記録がありません。最初の1回に挑戦！",
+    newBest:"🎉 ベストスコア更新！",
+    langLabel:"言語", pageDesc:"",
+    tiers:[
+      {e:"🍬",m:"唐揚げのころも<br>1枚ぶん",s:"まずは体があたたまりました。"},
+      {e:"🍗",m:"唐揚げ<br>半分ぶん！",s:"ひとくち分は確実に動きました。"},
+      {e:"🍗",m:"唐揚げ1個まで<br>あと少し！",s:"衣のカリカリ分は消費済み。"},
+      {e:"🍗",m:"唐揚げ1個ぶん<br>動きました！",s:"今夜のビールはおいしいはず。"},
+      {e:"🍗🍗",m:"唐揚げ<br>{n}個ぶん！",s:"もう唐揚げ定食に近づいています。"}
+    ]
+  },
+  en: {
+    title:"Move Beat | 1-minute workout rhythm game",
+    tagline:"Move your body for one minute to the falling move icons. A silly calorie comparison waits at the end!",
+    how1:"Move icons fall from the top",
+    how2:"When one reaches the yellow line, really do that move!",
+    how3:"Tap the big button with the same icon!",
+    start:"▶ Start", tip:"On a keyboard, you can also use A/S/D (or J/K/L)",
+    score:"SCORE", mJump:"Jump", mBanzai:"Hands up", mSquat:"Squat", quit:"Quit and go back",
+    ready:"Get ready…", go:"GO!",
+    perfect:"PERFECT!", great:"GREAT!", good:"GOOD", miss:"MISS", missTap:"Too early!",
+    resTitle:"Nice work, 1 minute done!", rank:"Rank", maxCombo:"Max combo", accuracy:"Accuracy",
+    again:"One more time!", home:"Back to title", funNote:"* Just for fun. Not a real calorie count.",
+    kcal:(k,s)=>`About ${k} kcal · ${s.toLocaleString()} steps (for laughs)`,
+    best:b=>b>0?`🏆 Best score ${b.toLocaleString()}`:"🏆 No record yet. Try your first run!",
+    newBest:"🎉 New best score!",
+    tiers:[
+      {e:"🍬",m:"One scrap of<br>fried chicken batter",s:"Your body is warmed up."},
+      {e:"🍗",m:"Half a fried<br>chicken piece!",s:"You surely earned one bite."},
+      {e:"🍗",m:"Almost one whole<br>karaage!",s:"The crispy coating is gone."},
+      {e:"🍗",m:"You moved off<br>one karaage!",s:"Tonight's beer will taste great."},
+      {e:"🍗🍗",m:"You moved off<br>{n} karaage!",s:"You're closing in on a full chicken meal."}
+    ]
+  }
+};
+let lang="en";
+(function(){
+  let l=null;
+  if(window.APP_LANG==="ja"||window.APP_LANG==="en") l=window.APP_LANG;
+  if(!l){try{const q=new URLSearchParams(location.search).get("lang");if(q==="ja"||q==="en")l=q;}catch(e){}}
+  if(!l){try{const s=localStorage.getItem("lang");if(s==="ja"||s==="en")l=s;}catch(e){}}
+  lang=l||"en";
+})();
+const t=k=>I18N[lang][k];
+const $=id=>document.getElementById(id);
+let best=0;
+try{best=parseInt(localStorage.getItem("movebeat_best"))||0;}catch(e){}
+let lastResult=null;
+
+function applyLang(){
+  document.documentElement.lang=lang;
+  document.title=t("title");
+  document.querySelectorAll("[data-i]").forEach(el=>{el.textContent=t(el.dataset.i);});
+  document.querySelectorAll(".langsw button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lang===lang));
+  document.querySelector(".langsw").setAttribute("aria-label",lang==="ja"?"言語":"Language");
+  $("pad0").setAttribute("aria-label",t("mJump"));
+  $("pad1").setAttribute("aria-label",t("mBanzai"));
+  $("pad2").setAttribute("aria-label",t("mSquat"));
+  $("bestLine").textContent=t("best")(best);
+  if(lastResult) renderResult();
+}
+function setLang(l){
+  lang=l;try{localStorage.setItem("lang",l);}catch(e){}
+  applyLang();
+}
+document.querySelectorAll(".langsw button").forEach(b=>b.addEventListener("click",()=>setLang(b.dataset.lang)));
+
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id));
+  window.scrollTo(0,0);
+}
+
+/* ---------- game ---------- */
+const DURATION=60, FALL=1.8, COUNT=3, WIN=0.3;
+const ICONS=["🦘","🙆","🧎"];
+let notes=[], state="idle", t0=0, raf=0, H=300, score=0, combo=0, maxCombo=0, stats={perfect:0,great:0,good:0,miss:0};
+const lanes=[$("lane0"),$("lane1"),$("lane2")];
+
+function buildNotes(){
+  let seed=20240607;
+  const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const out=[];let time=2.0,last=-1;
+  while(time<=58){
+    let lane=Math.floor(rnd()*3);
+    if(lane===last&&rnd()<.6) lane=(lane+1+Math.floor(rnd()*2))%3;
+    out.push({t:time,lane,done:false,el:null});
+    last=lane;
+    const gap=time<15?0.9:time<40?0.75:0.65;
+    time+=gap+(rnd()<.12?gap:0);
+  }
+  return out;
+}
+function measure(){H=$("lanes").clientHeight||300;}
+window.addEventListener("resize",measure);
+
+function startGame(){
+  cancelAnimationFrame(raf);
+  lanes.forEach(l=>l.innerHTML="");
+  notes=buildNotes();
+  notes.forEach(n=>{
+    const el=document.createElement("div");
+    el.className="note";el.textContent=ICONS[n.lane];el.style.display="none";
+    lanes[n.lane].appendChild(el);n.el=el;
+  });
+  score=0;combo=0;maxCombo=0;stats={perfect:0,great:0,good:0,miss:0};
+  updHud();$("bar").style.width="0%";$("hTime").textContent="1:00";
+  show("s-game");measure();
+  t0=performance.now()+COUNT*1000;state="play";
+  raf=requestAnimationFrame(loop);
+}
+function updHud(){$("hScore").textContent=score.toLocaleString();$("hCombo").textContent=combo;}
+function flashJudge(txt,color){
+  const j=$("judge");j.textContent=txt;j.style.color=color;
+  j.classList.remove("show");void j.offsetWidth;j.classList.add("show");
+}
+function loop(){
+  if(state!=="play")return;
+  const now=(performance.now()-t0)/1000;
+  const lineY=H*0.8;
+  if(now<0){
+    const n=Math.ceil(-now);
+    $("count").textContent=n>COUNT-0.001?t("ready"):n;
+    $("count").style.fontSize=n>=COUNT?"40px":"84px";
+  } else {
+    $("count").textContent=now<0.7?t("go"):"";
+    $("count").style.fontSize="84px";
+    const rem=Math.max(0,Math.ceil(DURATION-now));
+    $("hTime").textContent=Math.floor(rem/60)+":"+String(rem%60).padStart(2,"0");
+    $("bar").style.width=Math.min(100,now/DURATION*100)+"%";
+  }
+  for(const n of notes){
+    if(!n.el)continue;
+    const dt=n.t-now;
+    if(!n.done&&dt<-WIN){n.done=true;n.missed=true;n.el.classList.add("missed");stats.miss++;combo=0;updHud();flashJudge(t("miss"),"#ff7a8a");}
+    if(n.el.classList.contains("pop"))continue;
+    if(dt>FALL+0.1){n.el.style.display="none";continue;}
+    const y=lineY*(1-dt/FALL)-28;
+    if(y>H){n.el.remove();n.el=null;continue;}
+    n.el.style.display="flex";
+    n.el.style.transform="translateY("+y.toFixed(1)+"px)";
+    n.el.style.setProperty("--tf","translateY("+y.toFixed(1)+"px)");
+  }
+  if(now>=DURATION){finish();return;}
+  raf=requestAnimationFrame(loop);
+}
+function tap(lane){
+  if(state!=="play")return;
+  const pad=$("pad"+lane);pad.classList.add("down");setTimeout(()=>pad.classList.remove("down"),110);
+  lanes[lane].classList.add("flash");setTimeout(()=>lanes[lane].classList.remove("flash"),90);
+  const now=(performance.now()-t0)/1000;
+  let target=null,bd=9;
+  for(const n of notes){
+    if(n.lane!==lane||n.done||!n.el)continue;
+    const d=Math.abs(n.t-now);
+    if(d<bd){bd=d;target=n;}
+  }
+  if(!target||bd>WIN){
+    if(now>0)flashJudge(t("missTap"),"#9cc0d6");
+    return;
+  }
+  target.done=true;target.el.classList.add("pop");
+  const el=target.el;el.addEventListener("animationend",()=>el.remove());
+  let base,name,col;
+  if(bd<0.12){base=100;stats.perfect++;name="perfect";col="#ffd84d";}
+  else if(bd<0.22){base=70;stats.great++;name="great";col="#4de2c5";}
+  else{base=40;stats.good++;name="good";col="#7ab8ff";}
+  combo++;maxCombo=Math.max(maxCombo,combo);
+  score+=Math.round(base*(1+Math.min(combo,50)/50));
+  updHud();flashJudge(t(name),col);
+}
+function finish(){
+  state="done";cancelAnimationFrame(raf);
+  const total=notes.length,hits=stats.perfect+stats.great+stats.good;
+  const kcal=Math.round((hits*0.9+maxCombo*0.1)*10)/10;
+  const k=hits/total;
+  lastResult={score,maxCombo,stats:{...stats},hits,total,kcal,rank:k>=.9?"S":k>=.75?"A":k>=.5?"B":"C",acc:Math.round(k*100),isNew:false};
+  if(score>best){lastResult.isNew=best>0||score>0;best=score;try{localStorage.setItem("movebeat_best",String(best));}catch(e){}}
+  show("s-result");renderResult();
+  $("bestLine").textContent=t("best")(best);
+}
+function renderResult(){
+  const r=lastResult;
+  const kara=r.kcal/75;
+  const idx=kara<0.25?0:kara<0.6?1:kara<0.95?2:kara<1.3?3:4;
+  const tier=t("tiers")[idx];
+  $("rEmoji").textContent=tier.e;
+  $("rMsg").innerHTML=tier.m.replace("{n}",kara.toFixed(1));
+  $("rSub").textContent=tier.s;
+  $("rKcal").textContent=t("kcal")(r.kcal.toFixed(1),Math.round(r.kcal*20));
+  $("rRank").textContent=r.rank;
+  $("rScore").textContent=r.score.toLocaleString();
+  $("rCombo").textContent=r.maxCombo;
+  $("rAcc").textContent=r.acc+"%";
+  $("rPerfect").textContent=r.stats.perfect;
+  $("rGreat").textContent=r.stats.great+r.stats.good;
+  $("rMiss").textContent=r.stats.miss;
+  $("rNew").textContent=r.isNew?t("newBest"):"";
+}
+function quit(){state="idle";cancelAnimationFrame(raf);show("s-start");}
+
+document.querySelectorAll(".pad").forEach(p=>{
+  p.addEventListener("pointerdown",e=>{e.preventDefault();tap(+p.dataset.lane);});
+  p.addEventListener("click",e=>{if(e.detail===0)tap(+p.dataset.lane);});
+  p.addEventListener("contextmenu",e=>e.preventDefault());
+});
+const KEYS={a:0,s:1,d:2,j:0,k:1,l:2,"1":0,"2":1,"3":2,ArrowLeft:0,ArrowDown:1,ArrowRight:2};
+document.addEventListener("keydown",e=>{
+  if(state!=="play"||e.repeat)return;
+  const k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(k in KEYS){e.preventDefault();tap(KEYS[k]);}
+});
+document.addEventListener("visibilitychange",()=>{if(document.hidden&&state==="play")quit();});
+$("btnStart").addEventListener("click",startGame);
+$("btnAgain").addEventListener("click",startGame);
+$("btnHome").addEventListener("click",()=>{state="idle";show("s-start");});
+$("btnQuit").addEventListener("click",quit);
+
+applyLang();
+</script>
+</body>
+</html>

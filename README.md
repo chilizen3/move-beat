@@ -1,2 +1,19 @@
-# move-beat
-落ちてくる動きのアイコンに合わせて1分間体を動かし、終わると笑える消費換算が出るネオン風の音ゲー風ミニ運動ゲーム
+# Move Beat
+
+
+
+- ▶ **Try it:** https://chilizen3.github.io/move-beat/
+
+## About
+
+See the app and [IDEA.md](IDEA.md) (the idea log, in Japanese).
+
+## How it was made
+
+Built by shaping the idea together with AI (Claude) and publishing the AI-written code.
+The full conversation is in [IDEA.md](IDEA.md) (Japanese).
+
+## Files
+
+- `index.html` — the app (a single self-contained file)
+- `IDEA.md` — the idea log
