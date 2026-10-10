@@ -6,6 +6,7 @@ A one-minute neon rhythm game that gets you moving.
 
 - ▶ **Try it:** https://chilizen3.github.io/move-beat/
 - 🎬 **Demo video:** https://chilizen3.github.io/move-beat/demo.mp4
+- 🎤 **Pitch video:** https://chilizen3.github.io/move-beat/pitch.mp4
 - 📄 **Pitch deck (PDF):** [pitch.pdf](pitch.pdf)
 
 ## About
