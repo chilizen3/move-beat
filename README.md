@@ -3,6 +3,7 @@
 
 
 - ▶ **Try it:** https://chilizen3.github.io/move-beat/
+- 🎬 **Demo video:** https://chilizen3.github.io/move-beat/demo.mp4
 
 ## About
 
